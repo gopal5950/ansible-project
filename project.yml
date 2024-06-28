@@ -1,0 +1,49 @@
+---
+- hosts: all
+  become: yes
+  vars:
+    a:
+      - git
+      - java
+      - maven
+  tasks:
+    - name: install packages
+      yum:
+        name: "{{a}}"
+        state: present
+
+    - name: download apache tomcat
+      get_url:
+        url: "https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.90/bin/apache-tomcat-9.0.90.tar.gz"
+        dest: /tmp/apache-tomcat.tar.gz
+
+    - name: Extract apache tomcat
+      unarchive:
+        src: /tmp/apache-tomcat.tar.gz
+        dest: /opt
+        remote_src: yes
+
+    - name: Start tomcat
+      shell: nohup ./startup.sh
+      args:
+        chdir: /opt/apache-tomcat-9.0.90/bin
+
+
+- hosts: all
+  become: yes
+  tasks:
+    - name: clone git repository
+      git:
+        repo: "https://github.com/gopal5950/gctech.git"
+        dest: "gctech"
+    
+    - name: build packaege
+      command: " mvn clean package"
+      args:
+        chdir: "gctech"
+    - name: copy war file into tomcat webapps
+      copy:
+        src: "gctech/target/vamsi.war"
+        dest: "/opt/apache-tomcat-9.0.90/webapps/ROOT.war"
+        remote_src: yes
+
